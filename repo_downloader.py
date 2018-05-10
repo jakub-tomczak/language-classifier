@@ -8,6 +8,8 @@ import numpy as np
 import urllib.request
 from bs4 import BeautifulSoup
 import urllib.request
+import os
+
 
 base_url = 'https://api.github.com/'
 oldest_request = 1000
@@ -70,6 +72,17 @@ def get_dict_of_top_extensions():
             fileExtensionDict[data[0]] = data[1]
     print(fileExtensionDict['cpp']) #example display
     return fileExtensionDict
+
+def walk_through_dir(fileExtensionDict):
+    for root, dirs, files in os.walk(".", topdown=False):
+        for name in files:
+            for extension in fileExtensionDict.keys():
+                if name.endswith("."+ extension):
+                    print(name)
+                    #print(os.path.join(root, name))
+
+
 #get_public_repos()
 get_random_repositories_info()
 fileExtensionDict = get_dict_of_top_extensions()
+walk_through_dir(fileExtensionDict)

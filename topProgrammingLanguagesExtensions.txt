@@ -16,3 +16,4 @@ go GO
 scala Scala
 ts TypeScript
 m Objective-C
+pas Pascal
