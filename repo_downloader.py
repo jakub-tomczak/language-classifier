@@ -88,12 +88,35 @@ def create_csv_snippets(fileExtensionDict):
                                 wr.writerow([extension, readfile.read()])
                             except UnicodeDecodeError:
                                 pass
-def read_csv_snippets():
+def read_csv_snippets(fileExtensionDict):
     full_dataset = pandas.read_csv('snippets.csv', encoding='utf-8')
+    myMap = {}
+    index = 0
+    for elem in fileExtensionDict.keys():
+        myMap[elem] = index
+        index += 1
+    full_dataset['label_num'] = full_dataset.label.map(myMap) #map labels to int to enable classification
     print(full_dataset.head()) # show data sample
+
+    np.random.seed(0) #set seed to 0 to enable reproducible experiment
+    train_indices = np.random.rand(len(full_dataset)) < 0.7 # get random 70% of data for training set
+    train = full_dataset[train_indices] # training set (70%)
+    test = full_dataset[~train_indices] # test set (30%)
+
+    print("Number of elements in training set: {train}, test: {test}".format(
+        train=len(train), test=len(test)
+    ))
+
+    print("\n\nClass count in training set: ")
+    print(train.label.value_counts())
+
+    print("\n\nClass count in test set: ")
+    print(test.label.value_counts())
+
+
 
 #get_public_repos()
 get_random_repositories_info()
 fileExtensionDict = get_dict_of_top_extensions()
-create_csv_snippets(fileExtensionDict)
-read_csv_snippets()
+#create_csv_snippets(fileExtensionDict)
+read_csv_snippets(fileExtensionDict)
