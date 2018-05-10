@@ -9,7 +9,7 @@ import urllib.request
 from bs4 import BeautifulSoup
 import urllib.request
 import os
-
+import csv
 
 base_url = 'https://api.github.com/'
 oldest_request = 1000
@@ -73,16 +73,27 @@ def get_dict_of_top_extensions():
     print(fileExtensionDict['cpp']) #example display
     return fileExtensionDict
 
-def walk_through_dir(fileExtensionDict):
-    for root, dirs, files in os.walk(".", topdown=False):
-        for name in files:
-            for extension in fileExtensionDict.keys():
-                if name.endswith("."+ extension):
-                    print(name)
-                    #print(os.path.join(root, name))
 
+def create_csv_snippets(fileExtensionDict):
+    with open('snippets.csv', 'w', encoding='utf-8') as myfile:
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+        wr.writerow(['label','text'])
+        for root, dirs, files in os.walk(".", topdown=False):
+            for name in files:
+                for extension in fileExtensionDict.keys():
+                    if name.endswith("."+ extension):
+                        print(name)
+                        with open(os.path.join(root, name), "r", encoding='utf-8') as readfile:
+                            try:
+                                wr.writerow([extension, readfile.read()])
+                            except UnicodeDecodeError:
+                                pass
+def read_csv_snippets():
+    full_dataset = pandas.read_csv('snippets.csv', encoding='utf-8')
+    print(full_dataset.head()) # show data sample
 
 #get_public_repos()
 get_random_repositories_info()
 fileExtensionDict = get_dict_of_top_extensions()
-walk_through_dir(fileExtensionDict)
+create_csv_snippets(fileExtensionDict)
+read_csv_snippets()
