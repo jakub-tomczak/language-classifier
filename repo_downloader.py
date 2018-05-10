@@ -36,11 +36,11 @@ def get_public_repos(page=None):
 
 # create a dictionary: key- file extension,
 # value is a list of index (for mapping) and list of possible descriptions (programming languages)
-def get_dict_of_extensions():
-    numbersOfPages = 4
+def get_dict_of_all_extensions():
+    numberOfPages = 4
     fileExtensionDict = {}
     mapIndex = 0
-    for page in range(numbersOfPages):
+    for page in range(numberOfPages):
         with urllib.request.urlopen('https://www.file-extensions.org/filetype/extension/name/source-code-and-script-files/sortBy/visits/order/desc/page/' + str(page+1)) as response:
             html = response.read()
             soup = BeautifulSoup(html, 'html.parser')
@@ -61,7 +61,15 @@ def some_problems_here(fileExtensionDict):
     for x in fileExtensionDict:
         if len(fileExtensionDict[x][1]) > 1:
             print(x + ": " +str(fileExtensionDict[x]))
+# create a dict containing only TOP languages
+def get_dict_of_top_extensions():
+    fileExtensionDict = {}
+    with open("topProgrammingLanguagesExtensions.txt", "r") as readfile:
+        for line in readfile:
+            data = line.strip('\n').split(' ')
+            fileExtensionDict[data[0]] = data[1]
+    print(fileExtensionDict['cpp']) #example display
+    return fileExtensionDict
 #get_public_repos()
 get_random_repositories_info()
-fileExtensionDict = get_dict_of_extensions()
-some_problems_here(fileExtensionDict)
+fileExtensionDict = get_dict_of_top_extensions()
