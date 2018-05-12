@@ -10,6 +10,11 @@ from bs4 import BeautifulSoup
 import urllib.request
 import os
 import csv
+from sklearn.feature_extraction.text import CountVectorizer
+import operator
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import classification_report
+
 
 base_url = 'https://api.github.com/'
 oldest_request = 1000
@@ -75,19 +80,46 @@ def get_dict_of_top_extensions():
 
 
 def create_csv_snippets(fileExtensionDict):
+    countExtension = {x: 0 for x in fileExtensionDict.keys()}
     with open('snippets.csv', 'w', encoding='utf-8') as myfile:
         wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
         wr.writerow(['label','text'])
         for root, dirs, files in os.walk(".", topdown=False):
             for name in files:
-                for extension in fileExtensionDict.keys():
-                    if name.endswith("."+ extension):
-                        print(name)
+                for extension in fileExtensionDict.keys() :
+                    if name.endswith("."+ extension) and countExtension[extension] < 100:
+                        countExtension[extension] += 1
                         with open(os.path.join(root, name), "r", encoding='utf-8') as readfile:
                             try:
                                 wr.writerow([extension, readfile.read()])
                             except UnicodeDecodeError:
                                 pass
+
+
+def get_top_occuring_words(X_train_counts, how_many_words, vectorizer, train):
+    id_to_word = {v: k for k, v in vectorizer.vocabulary_.items()} # stwórz mapowanie pozycji wektora bag-of-words na konkretne słowa
+    cx = X_train_counts.tocoo()
+
+    category_word_counts = dict()      # słownik, w którym przeprowadzimy zliczanie
+
+    for doc_id, word_id, count in zip(cx.row, cx.col, cx.data):
+        category = train.iloc[doc_id]['label']  # w category znajduje się idetyfikator kategorii dla aktualnego dokumentu, zapisujemy go
+        word = id_to_word[word_id]              # w word - aktualne słowo z dokumentu
+                                                # mamy też liczność wystąpienia danego słowa w dokumencie (gdzie? :) )
+
+        if category not in category_word_counts.keys(): # stwórzmy słownik z kategoriami jako kluczami
+            category_word_counts[category] = dict()     # jeśli widzimy nową kategorię - dodajemy do słownika
+
+        if word not in category_word_counts[category]: # w ramach każdej kategorii będziemy zliaczać słowa
+            category_word_counts[category][word] = 0.0 # jeśli aktualne słowo jeszce nie zotało uwzględnione w kategorii - zainicjujmy jego licznik liczbą 0
+
+        category_word_counts[category][word] += count
+
+    for category_name in category_word_counts.keys(): # wyświetl nazwy kategorii i n najczęściej występujących w nich słów
+        sorted_cat = sorted(category_word_counts[category_name].items(), key=operator.itemgetter(1), reverse=True) # posortowany dict() słowo -> liczność, wg liczności, malejąco
+        print("{cat}: {top}".format(cat=category_name, top=[word for word, count in sorted_cat[:how_many_words]])) # wyświetl nazwę kategorii i top n słów
+
+
 def read_csv_snippets(fileExtensionDict):
     full_dataset = pandas.read_csv('snippets.csv', encoding='utf-8')
     myMap = {}
@@ -114,9 +146,31 @@ def read_csv_snippets(fileExtensionDict):
     print(test.label.value_counts())
 
 
+    vectorizer = CountVectorizer(encoding=u'utf-8')
+    X_train_counts = vectorizer.fit_transform(train['text'].values.astype('U')) # stwórz macierz liczbową z danych.
+    # W wierszach mamy kolejne dokumenty, w kolumnach kolejne pola wektora cech odpowiadające unikalnym słowom (bag of words)
+    X_test_counts = vectorizer.transform(test['text'].values.astype('U'))
+    # analogicznie jak wyżej - dla zbioru testowego.
+
+    print("Rozmiar stworzonej macierzy: {x}".format(x=X_train_counts.shape))
+    # wyświetl rozmiar macierzy. Pierwsze pole - liczba dokumentów, drugie - liczba cech (stała dla wszystkich dokumentów)
+    print("Liczba dokumentów: {x}".format(x=X_train_counts.shape[0]))
+    print("Rozmiar wektora bag-of-words {x}".format(x=X_train_counts.shape[1]))
+
+    print("Rozmiar stworzonej macierzy: {x}".format(x=X_test_counts.shape))
+    get_top_occuring_words(X_train_counts, 12, vectorizer, train) # wywołanie funkcji
+
+
+    nb = MultinomialNB() # STWÓRZ KLASYFIKATOR
+    nb.fit(X_train_counts, train['label_num']) # WYTRENUJ KLASYFIKATOR
+    accuracy = nb.score(X_test_counts, test['label_num']) # OBLICZ TRAFNOŚĆ
+    print(accuracy)
+    print("Szczegółowy raport (per klasa)")
+    print(classification_report(test['label_num'], (nb.predict(X_test_counts)))) # testowanie klasyfikatora - szerokie podsumowanie uwzględniające miary: precision, recall, f1
+
 
 #get_public_repos()
 get_random_repositories_info()
 fileExtensionDict = get_dict_of_top_extensions()
-#create_csv_snippets(fileExtensionDict)
+create_csv_snippets(fileExtensionDict)
 read_csv_snippets(fileExtensionDict)
