@@ -51,8 +51,8 @@ def get_public_repos(page=None, parameters=dict(), url=None, dest_dir = None):
         print('fetching repos from page %d' % page)
         parameters['since'] = page
 
-    parameters['per_page'] = 50
-    parameters['page'] = 3
+    parameters['per_page'] = 30
+    #parameters['page'] = 3
     request = make_request( 'repositories' if url is None else url, parameters=parameters)
     print('parameters', parameters)
     #for data in request:
@@ -67,7 +67,7 @@ def get_public_repos(page=None, parameters=dict(), url=None, dest_dir = None):
             print(e)
 
 language = 'csharp'
-# 'typescript','kotlin',
-languages_types = ['latex', 'pascal', 'objectiveC', 'swift', 'scala', 'r', 'go', 'cpp', 'xml']
+# 'typescript','kotlin', ,'latex', 'pascal', 'objectiveC', 'swift', 'scala', 'r', 'go', 'cpp', 'xml'
+languages_types = ['typescript']
 for language in languages_types:
     get_public_repos(parameters={'q' : 'language:{}'.format(language)}, url = 'search/repositories', dest_dir = language)
