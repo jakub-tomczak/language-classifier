@@ -56,7 +56,7 @@ def create_csv_snippets(fileExtensionDict):
         for root, dirs, files in os.walk(".", topdown=False):
             for name in files:
                 for extension in fileExtensionDict.keys():
-                    if name.endswith("."+ extension) and countExtension[extension] < 120\
+                    if name.endswith("."+ extension) and countExtension[extension] < 160\
                             and os.path.getsize(os.path.join(root, name)) < 20480: # size < 20kB
                         #print(os.path.getsize(os.path.join(root, name)))
                         countExtension[extension] += 1
@@ -66,6 +66,7 @@ def create_csv_snippets(fileExtensionDict):
                             except UnicodeDecodeError:
                                 countExtension[extension] -= 1
                                 #pass
+
 
 
 def get_top_occuring_words(X_train_counts, how_many_words, vectorizer, train):
@@ -141,7 +142,6 @@ def read_csv_snippets(fileExtensionDict):
     print(classification_report(test['label_num'], (nb.predict(X_test_counts)))) # testowanie klasyfikatora - szerokie podsumowanie uwzględniające miary: precision, recall, f1
 
 
-
 def get_count_extensions(fileExtensionDict):
     countExtension = {x: 0 for x in fileExtensionDict.keys()}
     for root, dirs, files in os.walk("1000_files", topdown=False):
@@ -151,3 +151,55 @@ def get_count_extensions(fileExtensionDict):
                     countExtension[extension] += 1
     print(countExtension)
     return countExtension
+
+
+def create_csv_snippets_one(fileExtensionDict, one_name):
+    with open('one.csv', 'w', encoding='utf-8') as myfile:
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+        wr.writerow(['label','text'])
+        for extension in fileExtensionDict.keys():
+                with open(one_name, "r", encoding='utf-8') as readfile:
+                    try:
+                        wr.writerow([extension, readfile.read()])
+                        break
+                    except UnicodeDecodeError:
+                        pass
+
+
+
+def read_csv_snippets_one(fileExtensionDict):
+    full_dataset = pandas.read_csv('snippets.csv', encoding='utf-8')
+    one = pandas.read_csv('one.csv', encoding='utf-8')
+    myMap = {}
+    myReverseMap = {}
+    index = 0
+    for elem in fileExtensionDict.keys():
+        myMap[elem] = index
+        myReverseMap[index] = elem
+        index += 1
+
+    full_dataset['label_num'] = full_dataset.label.map(myMap) #map labels to int to enable classification
+    one['label_num'] = one.label.map(myMap) #map labels to int to enable classification
+    print("one head: ")
+    print(one.head()) # show data sample
+
+    np.random.seed(0) #set seed to 0 to enable reproducible experiment
+    train_indices = np.random.rand(len(full_dataset)) < 0.7 # get random 70% of data for training set
+    train = full_dataset[train_indices] # training set (70%)
+
+    vectorizer = CountVectorizer(encoding=u'utf-8', max_features=10000)
+    X_train_counts = vectorizer.fit_transform(train['text'].values.astype('U')) # stwórz macierz liczbową z danych.
+    # W wierszach mamy kolejne dokumenty, w kolumnach kolejne pola wektora cech odpowiadające unikalnym słowom (bag of words)
+
+    X_one_counts = vectorizer.transform(one['text'].values.astype('U'))
+    # analogicznie jak wyżej - dla zbioru testowego.
+
+    nb = MultinomialNB() # STWÓRZ KLASYFIKATOR
+    nb.fit(X_train_counts, train['label_num']) # WYTRENUJ KLASYFIKATOR
+
+    #print(classification_report(one['label_num'], (nb.predict(X_one_counts)))) # testowanie klasyfikatora - szeroki
+
+    y = nb.predict(X_one_counts)
+    print("WYNIK: ")
+    extensionResult = myReverseMap.get(y[0])
+    print(extensionResult, fileExtensionDict.get(extensionResult))

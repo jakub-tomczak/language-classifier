@@ -14,4 +14,9 @@ def classify():
 
 if __name__=='__main__':
     create_datasets()
-    classify()
+    #classify()
+    #fileExtensionDict = get_dict_of_top_extensions()
+    #get_count_extensions(fileExtensionDict)
+    create_csv_snippets_one(fileExtensionDict, "klasa.java")
+    read_csv_snippets_one(fileExtensionDict)
+
