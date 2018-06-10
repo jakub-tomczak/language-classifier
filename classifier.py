@@ -55,14 +55,17 @@ def create_csv_snippets(fileExtensionDict):
         wr.writerow(['label','text'])
         for root, dirs, files in os.walk(".", topdown=False):
             for name in files:
-                for extension in fileExtensionDict.keys() :
-                    if name.endswith("."+ extension) and countExtension[extension] < 100:
+                for extension in fileExtensionDict.keys():
+                    if name.endswith("."+ extension) and countExtension[extension] < 120\
+                            and os.path.getsize(os.path.join(root, name)) < 20480: # size < 20kB
+                        #print(os.path.getsize(os.path.join(root, name)))
                         countExtension[extension] += 1
                         with open(os.path.join(root, name), "r", encoding='utf-8') as readfile:
                             try:
                                 wr.writerow([extension, readfile.read()])
                             except UnicodeDecodeError:
-                                pass
+                                countExtension[extension] -= 1
+                                #pass
 
 
 def get_top_occuring_words(X_train_counts, how_many_words, vectorizer, train):
@@ -115,7 +118,7 @@ def read_csv_snippets(fileExtensionDict):
     print(test.label.value_counts())
 
 
-    vectorizer = CountVectorizer(encoding=u'utf-8')
+    vectorizer = CountVectorizer(encoding=u'utf-8', max_features=10000)
     X_train_counts = vectorizer.fit_transform(train['text'].values.astype('U')) # stwórz macierz liczbową z danych.
     # W wierszach mamy kolejne dokumenty, w kolumnach kolejne pola wektora cech odpowiadające unikalnym słowom (bag of words)
     X_test_counts = vectorizer.transform(test['text'].values.astype('U'))
@@ -137,3 +140,14 @@ def read_csv_snippets(fileExtensionDict):
     print("Szczegółowy raport (per klasa)")
     print(classification_report(test['label_num'], (nb.predict(X_test_counts)))) # testowanie klasyfikatora - szerokie podsumowanie uwzględniające miary: precision, recall, f1
 
+
+
+def get_count_extensions(fileExtensionDict):
+    countExtension = {x: 0 for x in fileExtensionDict.keys()}
+    for root, dirs, files in os.walk("1000_files", topdown=False):
+        for name in files:
+            for extension in fileExtensionDict.keys():
+                if name.endswith("."+ extension):
+                    countExtension[extension] += 1
+    print(countExtension)
+    return countExtension
