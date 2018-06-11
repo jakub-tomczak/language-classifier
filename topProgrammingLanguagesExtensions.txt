@@ -7,7 +7,7 @@ css css
 html hmtl
 js javascript
 kt kotlin
-cs sharp
+cs csharp
 py python
 xml xml
 swift swift

@@ -7,9 +7,10 @@ import shutil
 from classifier import get_dict_of_top_extensions
 from shutil import copy, move
 
-
+counter_limit = 1000
+how_deep = 15
 threads_num = 8
-root_dir = 'temp'
+distributing_files_root_dir = 'temp_languages'
 file_list_dump = 'dump_file_list_temp_languages'
 files_dict = dict()
 languages_types = [ 'typescript', 'cpp','kotlin', 'latex', 'pascal', 'objectiveC', 'swift', 'scala', 'r', 'go', 'xml']
@@ -20,8 +21,12 @@ def get_files_list(dir, files_dict):
         shutil.rmtree(dir)
         return
     for node in list:
+        shutil.rmtree(node, ignore_errors=True)
         joined = os.path.join(dir, node)
         if os.path.isfile(joined):
+
+            shutil.rmtree(joined, ignore_errors=False)
+            continue
             extension = node.split('.')[-1]
             if extension in files_dict:     #this file has not been indexed yet
                 files_dict[extension].append( joined )
@@ -133,36 +138,41 @@ def copy_using_dict(language, counter, files_dict):
     print('copied files for language' , language, ' ', copied)
 top_languages = get_dict_of_top_extensions()
 
-counter_limit = 1000
-how_deep = 15
+def calculate_counters(top_languages):
+    return { key:len( os.listdir( '1000_files/{}'.format(key)) ) for key, value in top_languages.items()}
+
+
 if __name__=='__main__':
 
-    files_dict = dict()
-    counters = dict()
+    get_files_list('temp', None)
 
-    for extension in top_languages.keys():
-        #initialize counters
-        counters[extension] = 0
-        files_dict[extension] = []
 
-    #load dict with files paths
-    load_files()
-    for key, value in top_languages.items():
-        path = '1000_files/{}'.format(key)
-        if(not os.path.exists(path)):
-            os.mkdir(path)
-        counters[key] = len( os.listdir(path) )
-        print('language', value, 'files already', counters[key], 'to copy', counter_limit - counters[key] )
-        if (counter_limit - counters[key] <= 0):
-            print('language', value,'files already copied(files -', counters[key], ')' )
-
-    languages_extensions = top_languages.keys()
-    #copy files using reccurent root traversing
-    #move_first_1000_files(languages_extensions, 'temp', counters, 0)
+    # files_dict = dict()
+    # counters = dict()
+    #
+    # for extension in top_languages.keys():
+    #     #initialize counters
+    #     counters[extension] = 0
+    #     files_dict[extension] = []
+    #
+    # #load dict with files paths
+    # load_files()
+    # for key, value in top_languages.items():
+    #     path = '1000_files/{}'.format(key)
+    #     if(not os.path.exists(path)):
+    #         os.mkdir(path)
+    #     counters[key] = len( os.listdir(path) )
+    #     print('language', value, 'files already', counters[key], 'to copy', counter_limit - counters[key] )
+    #     if (counter_limit - counters[key] <= 0):
+    #         print('language', value,'files already copied(files -', counters[key], ')' )
+    #
+    # languages_extensions = top_languages.keys()
+    # #copy files using reccurent root traversing
+    # move_first_1000_files(languages_extensions, distributing_files_root_dir, counters, 0)
 
     #copy files using prepared dict
-    for key, value in top_languages.items():
-        copy_using_dict(key, counters[key], files_dict)
+    #for key, value in top_languages.items():
+    #    copy_using_dict(key, counters[key], files_dict)
 '''
     #print stats
     list, sum = get_summary(files_dict)
@@ -170,7 +180,6 @@ if __name__=='__main__':
         print('{};{}'.format(item, list[item]))
     print('suma;{}'.format(sum) )
 '''
-    #copies files with extensions using 8 process
-    #copy_parallel()
+
 
 
